@@ -1,112 +1,171 @@
 # @libdev-ui/feedback-pulse
 
-A smart, non-intrusive, and dynamic feedback/survey widget for React applications. Designed to collect user feedback efficiently without degrading the user experience (UX).
+Smart, non-intrusive, and dynamic feedback widget for React applications.
+Collect user insights with a privacy-first approach and a professional Material UI based experience.
 
-Built with **Material UI (MUI)** for seamless theme integration and **Tailwind CSS** (fully isolated via prefixes) for perfect layout control. 100% GDPR-compliant by default.
+## Features
 
-## ✨ Features
+- Intelligent display logic with configurable backoff scheduling
+- Material UI integration that follows your existing theme
+- Isolated Tailwind styling with the `ld-fp-` prefix to avoid collisions
+- Fully localizable UI text
+- GDPR-friendly, first-party cookie based state handling
+- Simple provider + widget integration
 
-- **Smart "Aggressive Backoff" Algorithm:** Automatically adjusts the frequency of the prompt based on user dismissals (e.g., waits 24 hours after the first dismiss, 7 days after the second, and then switches to an aggressive 5-minute interval).
-- **GDPR Compliant:** Fully anonymous by default. Uses only first-party cookies to track interaction state. No IP tracking, no personal data collection unless explicitly requested.
-- **Theme Inheritance:** Automatically inherits your application's MUI theme (fonts, colors, shapes).
-- **Style Isolation:** Uses a strict `ld-fp-` prefix for all internal Tailwind classes to guarantee zero conflicts with your app's global CSS.
-- **Fully Localizable:** Provide your own translations for all UI texts via props.
-
-## 📦 Installation
+## Installation
 
 This package requires `react`, `react-dom`, and `@mui/material` as peer dependencies.
 
-npm install @libdev-ui/feedback-pulse
-
-### Using Yarn
-
-yarn add @libdev-ui/feedback-pulse
-
-### Using PNPM
-
+```bash
 pnpm add @libdev-ui/feedback-pulse
+```
 
-## 🚀 Quick Start
+or
 
-Wrap your application (or a specific part of it) with the `FeedbackProvider`, and place the `FeedbackWidget` where you want it to render.
+```bash
+npm install @libdev-ui/feedback-pulse
+```
 
+## Quick Start
+
+Wrap your app with `FeedbackProvider` and render `FeedbackWidget` once near the root of your application.
+
+```tsx
 import React from 'react';
-import { FeedbackProvider, FeedbackWidget } from '@libdev-ui/feedback-pulse';
-// The isolated CSS is automatically imported by the library
+import {
+  FeedbackProvider,
+  FeedbackWidget,
+} from '@libdev-ui/feedback-pulse';
 
-const App = () => {
-  // Your API submission logic
-  const handleSendFeedback = async (data) => {
-    await fetch('/api/feedback', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  };
+async function handleSendFeedback(data: unknown) {
+  await fetch('/api/feedback', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+}
 
+export default function App() {
   return (
     <FeedbackProvider
       onSend={handleSendFeedback}
       settings={{
-        triggerDelay: 30000, // Show after 30 seconds
-        variant: 'emoji',    // 'emoji' or 'binary' (thumbs up/down)
+        triggerDelay: 30000,
+        variant: 'emoji',
       }}
     >
-      ```jsx
-      <YourMainAppContent />
-      ```
-
-      {/* Renders the toast and modal */}
-      <FeedbackWidget showContactFields={false} />
+      <main>{/* Your application */}</main>
+      <FeedbackWidget showContactFields />
     </FeedbackProvider>
   );
-};
+}
+```
 
-export default App;
+## How It Works
 
-## ⚙️ Configuration (API Reference)
+The widget uses a configurable backoff strategy to avoid interrupting users too often.
+After dismissals, the next display is delayed according to your configured schedule.
+After successful submission, the widget stays hidden until the cookie expiration window ends.
 
-### `FeedbackProvider` Props
+Default backoff schedule:
 
-| Prop | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `onSend` | `(data: any) => Promise<void>` | **Required** | The function called when the user submits the form. The library waits for this promise to resolve before setting the success cookie. |
-| `settings` | `FeedbackSettings` | `{}` | Optional configuration object for logic and UI variants. |
+- 24 hours after the first dismissal
+- 7 days after the second dismissal
+- 5 minutes for aggressive follow-up mode
 
-### `FeedbackSettings` Object
+## API
+
+### `FeedbackProvider`
+
+Provides feedback state, timing logic, and submission handling.
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `onSend` | `(data: any) => Promise<void>` | Yes | — | Called when feedback is submitted. Success state is applied only after the promise resolves. |
+| `settings` | `FeedbackSettings` | No | `{}` | Optional logic, display, translation, and storage configuration. |
+
+### `FeedbackSettings`
 
 | Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `triggerDelay` | `number` | `30000` | Initial delay (in ms) before showing the widget to new users. |
-| `storageKey` | `string` | `'ld_fp_state'` | The name of the cookie used to store the interaction state. |
-| `cookieExpiryDays` | `number` | `90` | How many days to wait before asking again after a successful submission. |
-| `backoffSchedule` | `number[]` | `[86400, 604800, 300]` | Array of delays (in seconds) after each dismissal. |
-| `variant` | `'emoji' \| 'binary'` | `'emoji'` | The visual rating style. |
-| `translations` | `object` | English defaults | Override any text in the UI (see Translations section). |
+| --- | --- | --- | --- |
+| `triggerDelay` | `number` | `30000` | Delay in milliseconds before the widget appears for new users. |
+| `storageKey` | `string` | `'ld_fp_state'` | Name of the cookie used to store widget state. |
+| `cookieExpiryDays` | `number` | `90` | Number of days before users may be asked again after successful feedback. |
+| `backoffSchedule` | `number[]` | `[86400, 604800, 300]` | Delay values in seconds applied after dismissals. |
+| `variant` | `'emoji' \| 'binary'` | `'emoji'` | Visual style for the initial prompt. |
+| `translations` | `object` | English defaults | Overrides any UI text for localization. |
 
-### `FeedbackWidget` Props
+### `FeedbackWidget`
 
-| Prop | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `showContactFields` | `boolean` | `false` | If true, renders an optional Email input field in the modal. |
+Renders the visible UI for the toast and modal flow.
 
-## 🌍 Translations
+#### Props Contact
 
-You can easily localize the widget by passing a `translations` object to the `settings` prop:
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `showContactFields` | `boolean` | No | `false` | Enables optional contact fields such as email in the feedback modal. |
 
+## Localization
+
+All visible text can be overridden through `settings.translations`.
+
+```tsx
 <FeedbackProvider
   onSend={handleSendFeedback}
   settings={{
     translations: {
-      toastTitle: 'Wie würden Sie unser Design bewerten?',
-      modalTitle: 'Vielen Dank für Ihre Bewertung!',
-      modalDescription: 'Wir würden uns freuen, mehr Details zu erfahren.',
-      cancelButton: 'Abbrechen',
-      submitButton: 'Senden',
-      // ...
-    }
+      toastTitle: 'How would you rate your experience?',
+      submitButton: 'Send Feedback',
+      // Override additional labels as needed
+    },
   }}
 >
+  <FeedbackWidget />
+</FeedbackProvider>
+```
 
-## 📄 License
+Check the exported TypeScript types in the package for the full list of available translation keys.
+
+## Theming
+
+`@libdev-ui/feedback-pulse` is designed to work naturally with Material UI applications.
+It inherits theme values such as colors, typography, and border radius so the widget feels native inside your interface.
+
+## Style Isolation
+
+The package uses prefixed Tailwind utility classes with the `ld-fp-` namespace.
+This prevents conflicts with your application styles and avoids leakage from existing global Tailwind or CSS rules.
+
+Example:
+
+- `flex` becomes `ld-fp-flex`
+- `rounded-lg` becomes `ld-fp-rounded-lg`
+
+## Privacy and GDPR
+
+The library follows a privacy-first approach.
+By default, it does not track personal data, analytics identifiers, or third-party cookies.
+
+It uses a single first-party cookie to store widget interaction state such as:
+
+- `dismissCount`
+- `lastSeen`
+- `status`
+
+This makes the package suitable for GDPR-conscious applications where minimal local state persistence is preferred.
+
+## Recommended Usage
+
+- Render the widget once at app level to avoid duplicate instances
+- Keep `onSend` asynchronous and return a real promise
+- Connect `onSend` to your own API endpoint or backend handler
+- Use translations to align the widget with your product language
+- Adjust the backoff schedule to match your UX policy
+
+## License
 
 MIT © LibDev
