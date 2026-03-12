@@ -1,0 +1,32 @@
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# IDEs (VS Code, JetBrains)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment & Secrets
+.env
+.env.local
+*.log
+
+# Dependencies (ако ползваш Node или Python - разкоментирай съответното)
+# node_modules/
+# __pycache__/
+# venv/
+# .venv/
+
+# Build outputs
+dist/
+build/
+bin/
